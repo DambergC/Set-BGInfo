@@ -1,0 +1,17 @@
+<BGInfo>
+     <Setup Name="Production" Type="Environment">
+            <Config>bginfoProd.bgi</Config>
+     </Setup>
+
+     <Setup Name="Acceptance" Type="Environment">
+            <Config>bginfoAcc.bgi</Config>
+     </Setup>
+
+     <Setup Name="Test" Type="Environment">
+            <Config>bginfoTest.bgi</Config>
+    </Setup>
+
+	 <Setup Name="Tier" Type="Environment">
+            <Config>bginfoTier.bgi</Config>
+    </Setup>
+</BGInfo>
