@@ -22,7 +22,7 @@
    Author: Christian Damberg
    Website: https://www.damberg.org
    Email: christian@damberg.org
-   Modified date: 2022-04-01
+   Modified date: 2022-04-04
    Version 1.0 - First release
     
    For the script to work you need to have configured BGinfo for your environment.
@@ -55,27 +55,13 @@
             [Parameter(Mandatory=$true)]
             [string] $SourceName
         )
-        
-        [System.Diagnostics.EventLog]::SourceExists($SourceName)
+           [System.Diagnostics.EventLog]::SourceExists($SourceName)
         }
 
     #------------------------------------------------#
     # Variables to the script
 
-    [string]$bgInfoConfigProd = "bginfoProd.bgi"
-    [string]$bgInfoConfigAcc = "bginfoAcc.bgi"
-    [string]$bgInfoConfigTest = "bginfoTest.bgi"
-    [string]$bgInfoConfigTest = "bginfoTier.bgi"
-    [string]$bgInfoExecutePathProd = "$PSScriptRoot\Bginfo64.exe /i$PSScriptRoot\$bgInfoConfigProd /timer:0 /nolicprompt"
-    [string]$bgInfoExecutePathAcc = "$PSScriptRoot\Bginfo64.exe /i$PSScriptRoot\$bgInfoConfigAcc /timer:0 /nolicprompt"
-    [string]$bgInfoExecutePathTest = "$PSScriptRoot\Bginfo64.exe /i$PSScriptRoot\$bgInfoConfigTest /timer:0 /nolicprompt"
-    [string]$bgInfoExecutePathTier = "$PSScriptRoot\Bginfo64.exe /i$PSScriptRoot\$bgInfoConfigTier /timer:0 /nolicprompt"  
-
     [string]$DomainName = "corp.viamonstra.com"
-    [String]$OUNameProd = 'Production'
-    [String]$OUNameAcc = 'Acceptance'
-    [String]$OUNameTest = 'Test'
-    [String]$OUNameTier = 'Tier'
     [String]$eventlogsource = 'BGinfo'
     [string]$registrypath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
     
@@ -89,7 +75,6 @@
             { 
                 write-host "Evebtlogsource $eventlogsource exist" -ForegroundColor green
             }
-
         else 
             {
                 Write-Host "Creating new source in applicationlog called BGInfo" -ForegroundColor green
@@ -103,9 +88,7 @@
             {
                 write-host "RegistryRun missing value, adding it to Registry" -ForegroundColor Green
                 New-ItemProperty -Path $registrypath -Name BGInfo -PropertyType string -Value "powershell.exe -executionpolicy unrestricted -file $PSScriptRoot\Set-BGinfo.ps1" 
-
             }
-
         else
             {
                 Write-host "Registry for run exist" -ForegroundColor green
@@ -141,26 +124,28 @@
     #------------------------------------------------#    
     # Compare OU-path with variable and run BGInfo 
 
-    if ($OUPath -like "*$OUNameProd*")
-       {
-            Invoke-Expression $bgInfoExecutePathProd
-            Write-EventLog -LogName Application -Source BGinfo -EntryType Information -Message "BGinfo configured for $OUNameProd at logon by $env:username" -EventId 0
-       }
-            
-       if ($OUPath -like "*$OUNameAcc*")
-       {
-           Invoke-Expression $bgInfoExecutePathAcc
-           Write-EventLog -LogName Application -Source BGinfo -EntryType Information -Message "BGinfo configured for $OUNameAcc at logon by $env:username" -EventId 0
-       }
-       
-       if ($OUPath -like "*$OUNameTest*")
-       {
-          Invoke-Expression $bgInfoExecutePathTest
-          Write-EventLog -LogName Application -Source BGinfo -EntryType Information -Message "BGinfo configured for $OUNameTest at logon by $env:username" -EventId 0
-       }
-       
-       if ($OUPath -like "*$OUNameTier*")
-       {
-          Invoke-Expression $bgInfoRegkeyValueTier
-          Write-EventLog -LogName Application -Source BGinfo -EntryType Information -Message "BGinfo configured for $OUNameTier at logon by $env:username"
-       }
+    # Check XML after which configfile to use
+    
+    [XML]$xmlfile = Get-Content .\BGinfo.xml
+
+    foreach ($item in $xmlfile.bginfo.setup.name)
+        {
+        
+            if($OUPath -like "*$item*")
+            {
+                write-host "$item exist in $OUPath" -ForegroundColor Green
+                $ExtractedValue = $item
+            }
+           }
+        
+        $data = $xmlfile.BGInfo.Setup | Where-Object {$_.name -contains $ExtractedValue}
+
+    # configfile to use
+    $bginfoconfig = $data.config 
+
+    # Construct executecommand
+    $bgInfoExecutePath = "$PSScriptRoot\Bginfo64.exe /i$PSScriptRoot\$bgInfoConfig /timer:0 /nolicprompt"
+    
+    # Run BGinfo with BGinfo config
+    Invoke-Expression $bgInfoExecutePath
+    Write-EventLog -LogName Application -Source BGinfo -EntryType Information -Message "BGinfo configured for $ExtractedValue at logon by $env:username" -EventId 0
