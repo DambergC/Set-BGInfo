@@ -11,11 +11,14 @@
 
 .EXAMPLE
    Set-BGInfo.ps1 -FirstRun
-   First run of the script on the server to verify that EventSource in Application Log exist and to add path to Registry Run
+   First run of the script on the server to verify that EventSource in Application Log exist and to add path to Registry Run. The script will then run
+   on every logon to the server.
+   
+   If you move the BGInfo-folder you need to run "firstrun" again.
 
 .EXAMPLE
    Set-BGInfo.ps1 -Reset
-   Removes registry run value if BGinfo is removed or BGinfo folder is moved.
+   Removes registry run value if the BGInfo are not to be used or folder is deleted.
 
 .NOTES
    Filename: Set-BGInfo.ps1
@@ -35,8 +38,6 @@
    - Name of Configfiles for BGInfo
    
 #>
-   
-
     #------------------------------------------------#
     # Parameters
 
@@ -46,7 +47,6 @@
     [Parameter(Mandatory=$false)]
     [Switch]$Reset
     )
-
     #------------------------------------------------#
     # Functions in script
 
@@ -57,7 +57,6 @@
         )
            [System.Diagnostics.EventLog]::SourceExists($SourceName)
         }
-
     #------------------------------------------------#
     # Variables to the script
 
@@ -70,7 +69,7 @@
       
     if($Firstrun -eq $true)
     {
-        #Eventlogsource
+        # Eventlogsource
         if((Test-EventLogSource $eventlogsource) -eq $true)
             { 
                 write-host "Evebtlogsource $eventlogsource exist" -ForegroundColor green
@@ -81,7 +80,7 @@
                 New-Eventlog -LogName application -Source BGInfo
             }
 
-        #Registry run check for BGinfo run
+        # Registry run check for BGinfo run
         $RegistryRunVaule = Get-ItemProperty -Path $registrypath -Name BGinfo -ErrorAction SilentlyContinue 
 
         if ($RegistryRunVaule -eq $null)
