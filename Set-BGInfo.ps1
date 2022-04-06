@@ -126,7 +126,14 @@
                 write-log -Level INFO -Message 'Registryvalue exist but will be updated'
                 New-ItemProperty -Path $registrypath -Name BGInfo -PropertyType string -Value "$PSScriptRoot\run.bat" -Force
             }
-
+	
+	# Set modify for everyone on bginfo.bmp
+	$ACL = Get-ACL -Path $PSScriptRoot\bginfo.bmp
+	$AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("everyone", "modify", "Allow")
+	$ACL.SetAccessRule($AccessRule)
+	$ACL | Set-Acl -Path $PSScriptRoot\bginfo.bmp
+	
+	
     }
 
     if($reset -eq $true)
